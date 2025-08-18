@@ -7,6 +7,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0
     },
+    discount_percentage:{
+      type:DataTypes.INTEGER,
+      allowNull:false,
+      defaultValue:0
+    },
     has_variants: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
@@ -26,8 +31,15 @@ module.exports = (sequelize, DataTypes) => {
         {
           model: sequelize.models.ProductVariant,
           include: [
-            sequelize.models.Color,
-            sequelize.models.Size
+            sequelize.models.ProductImage,
+            {
+              model: sequelize.models.ProductAttributeValue,
+              include: [
+                {
+                  model: sequelize.models.ProductAttribute,
+                }
+              ]
+            }
           ]
         }
       ]
@@ -63,14 +75,24 @@ module.exports = (sequelize, DataTypes) => {
         {
           model: sequelize.models.ProductImage,
           where: { ProductVariantId: null }, // Only general product images
-          required: false
+          required: false,
         },
+        sequelize.models.Category,
         {
           model: sequelize.models.ProductVariant,
           include: [
-            sequelize.models.Color,
-            sequelize.models.Size,
-            sequelize.models.ProductImage // Include variant-specific images
+            {model: sequelize.models.ProductImage}, // Include variant-specific images
+            
+            {
+              model: sequelize.models.ProductAttributeValue
+              ,
+              group:'ProductAttributeId',
+              include: [
+                {
+                  model: sequelize.models.ProductAttribute,
+                }
+              ]
+            }
           ],
           required: false
         }
@@ -84,7 +106,7 @@ module.exports = (sequelize, DataTypes) => {
     };
   };
 
-  Product.getProductByIdwithImages = async function(productID){
+  Product.getProductByIdWithImages = async function(productID){
     return await this.findByPk(productID, {
       include: [
         {
@@ -95,9 +117,15 @@ module.exports = (sequelize, DataTypes) => {
         {
           model: sequelize.models.ProductVariant,
           include: [
-            sequelize.models.Color,
-            sequelize.models.Size,
-            sequelize.models.ProductImage // Include variant-specific images
+            sequelize.models.ProductImage, // Include variant-specific images
+            {
+              model: sequelize.models.ProductAttributeValue,
+              include: [
+                {
+                  model: sequelize.models.ProductAttribute,
+                }
+              ]
+            }
           ]
         }
       ]

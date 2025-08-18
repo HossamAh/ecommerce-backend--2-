@@ -1,5 +1,6 @@
 const { faker } = require('@faker-js/faker');
 const db = require('../models');
+const { where } = require('sequelize');
 
 async function seed() {
   try {
@@ -41,10 +42,13 @@ async function seed() {
       { name: 'White', code: '#FFFFFF' }
     ];
 
-    for (const color of colorData) {
-      const newColor = await db.Color.create(color);
-      colors.push(newColor);
-    }
+    // for (const color of colorData) {
+    //   const newColor = await db.ProductAttributeValue.create({
+    //     value: color.name,
+    //     code: color.code
+    //   });
+    //   colors.push(newColor);
+    // }
 
     // Seed Sizes
     const sizes = [];
@@ -55,11 +59,23 @@ async function seed() {
       { name: 'Extra Large', code: 'XL' }
     ];
 
-    for (const size of sizeData) {
-      const newSize = await db.Size.create(size);
-      sizes.push(newSize);
-    }
+    // for (const size of sizeData) {
+    //   const newSize = await db.ProductAttributeValue.create({
+    //     value: size.name,
+    //     code: size.code
+    //   });
+    //   sizes.push(newSize);
+    // }
 
+    // Seed Product Attributes
+    const productAttributes = [];
+    productAttributes.push(await db.ProductAttribute.create({
+      name: "color"
+    }));
+    productAttributes.push(await db.ProductAttribute.create({
+      name: "size"
+    }));
+    
     // Seed Products with Variants and Variant-specific Images
     const products = [];
     for (let i = 0; i < 20; i++) {
@@ -80,6 +96,7 @@ async function seed() {
         CategoryId: category.id,
         has_variants: true,
         base_price: basePrice,
+        discount_percentage: faker.number.int({ min: 0, max: 30 }),
         main_image_url: mainImageUrl
       });
       
@@ -117,8 +134,8 @@ async function seed() {
       // Create variants for each product
       const variantCount = faker.number.int({ min: 1, max: 5 });
       for (let j = 0; j < variantCount; j++) {
-        const color = faker.helpers.arrayElement(colors);
-        const size = faker.helpers.arrayElement(sizes);
+        const color = faker.helpers.arrayElement(colorData);
+        const size = faker.helpers.arrayElement(sizeData);
         
         // Calculate variant price based on base price with some variation
         const priceVariation = faker.number.float({ min: -5, max: 15, precision: 0.01 });
@@ -126,13 +143,46 @@ async function seed() {
         
         const variant = await db.ProductVariant.create({
           ProductId: product.id,
-          ColorId: color.id,
-          SizeId: size.id,
           price: variantPrice,
           stock: faker.number.int({ min: 0, max: 100 }),
-          discount_percentage: faker.number.int({ min: 0, max: 30 }),
-          sku: `${product.id}-${color.code}-${size.code}`
+          sku: `${product.id}-${color.name}-${size.name}`,
+
         });
+        console.log("id of the attribute of color is",productAttributes[0].id);
+        console.log("id of the attribute of size is",productAttributes[1].id);
+        console.log(color);
+        console.log(size);
+        
+        // Add color attribute value to this variant
+        const [colorObj,ColorCreated]=await db.ProductAttributeValue.findOrCreate({
+          where:{
+            ProductAttributeId: productAttributes[0].id,
+            value: color.name,
+            code: color.code
+          },
+          defaults:{
+          ProductAttributeId: productAttributes[0].id, // Color attribute
+          value: color.name,
+          code: color.code}
+        });
+
+        // Add size attribute value to this variant
+        const [sizeObj, sizeCreated]  = await db.ProductAttributeValue.findOrCreate({
+          where:{
+            ProductAttributeId: productAttributes[1].id, // Size attribute
+            value: size.name,
+            code: size.code
+          },
+          defaults:{
+          ProductAttributeId: productAttributes[1].id, // Size attribute
+          value: size.name,
+          code: size.code}
+        });
+        // adding the records of the junction table
+        // if(!ColorCreated)
+          await variant.addProductAttributeValue(colorObj);
+        // if(!sizeCreated)
+          await variant.addProductAttributeValue( sizeObj);
         
         // Add variant-specific images
         const variantKeywords = [
@@ -140,6 +190,7 @@ async function seed() {
           product.name.split(' ')[0],
           category.name
         ];
+
         
         // Create main variant image
         const mainVariantImageUrl = faker.image.urlLoremFlickr({ 
@@ -158,7 +209,7 @@ async function seed() {
         
         // Add additional variant images
         for (let k = 0; k < 2; k++) {
-          const keyword = variantKeywords[k] || color.name.toLowerCase();
+          const keyword = variantKeywords[k] || color.value.toLowerCase();
           await db.ProductImage.create({
             url: faker.image.urlLoremFlickr({ 
               width: 640, 

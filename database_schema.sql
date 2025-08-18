@@ -27,23 +27,26 @@ CREATE TABLE product_images (
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
-CREATE TABLE orders (
+CREATE TABLE Orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
+    UserId INT,
     status ENUM('pending', 'paid', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
     total_amount DECIMAL(10, 2),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (UserId) REFERENCES Users(id)
 );
 
-CREATE TABLE order_items (
+CREATE TABLE OrderItems (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT,
-    product_variant_id INT,
+    OrderId INT,
+    ProductVariantId INT,
     quantity INT,
     price DECIMAL(10, 2),
-    FOREIGN KEY (order_id) REFERENCES orders(id),
-    FOREIGN KEY (product_variant_id) REFERENCES product_variants(id)
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (OrderId) REFERENCES Orders(id),
+    FOREIGN KEY (ProductVariantId) REFERENCES ProductVariants(id)
 );
 
 CREATE TABLE cart (
@@ -126,5 +129,20 @@ ALTER TABLE product_images
 ALTER TABLE products 
     ADD COLUMN base_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
     ADD COLUMN main_image_url VARCHAR(255);
+
+-- Update the order_shipping table to use the correct column names
+CREATE TABLE OrderShippings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    OrderId INT,
+    name VARCHAR(255) NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    city VARCHAR(255) NOT NULL,
+    phone VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    landmark VARCHAR(255),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (OrderId) REFERENCES Orders(id)
+);
 
 

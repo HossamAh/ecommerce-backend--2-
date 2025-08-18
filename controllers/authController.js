@@ -5,10 +5,10 @@ const { User, Cart } = db;
 require("dotenv").config();
 
 exports.register = async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   const userData = req.body;
   userData.password = await bcrypt.hash(userData.password, 10);
-  console.log(userData);
+  // console.log(userData);
   try {
     const result = await User.create(userData);
     // Create cart for this user
@@ -20,7 +20,7 @@ exports.register = async (req, res) => {
     if (err.name === "SequelizeUniqueConstraintError") {
       res.status(400).json({ error: "Email already exists" });
     } else {
-      console.log(err);
+      // console.log(err);
       res.status(500).json({ error: "An error occurred during registration" });
     }
   }
@@ -57,7 +57,7 @@ exports.login = async (req, res) => {
 };
 
 exports.profile = async (req, res) => {
-  console.log(req.user);
+  // console.log(req.user);
   try {
     const user = await User.findByPk(req.user.id, {
       attributes: { exclude: ["password"] },

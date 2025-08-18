@@ -17,8 +17,14 @@ module.exports = (sequelize, DataTypes) => {
           model: sequelize.models.ProductVariant,
           include: [
             sequelize.models.Product,
-            sequelize.models.Color,
-            sequelize.models.Size
+            {
+              model: sequelize.models.ProductAttributeValue,
+              include: [
+                {
+                  model: sequelize.models.ProductAttribute,
+                }
+              ]
+            }
           ]
         }]
       }]
@@ -29,11 +35,7 @@ module.exports = (sequelize, DataTypes) => {
     const { QueryTypes } = require('sequelize');
     const result = await sequelize.query(`
       SELECT SUM(
-        CASE 
-          WHEN pv.discount_percentage > 0 
-          THEN pv.price * (1 - pv.discount_percentage / 100) * ci.quantity
-          ELSE pv.price * ci.quantity
-        END
+        pv.price * ci.quantity
       ) as total
       FROM CartItems ci
       JOIN ProductVariants pv ON ci.ProductVariantId = pv.id

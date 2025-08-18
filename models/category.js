@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     name: DataTypes.STRING
   });
   
+
   // Custom methods from categoryModel.js
   Category.getWithProductCount = async function() {
     const { QueryTypes } = require('sequelize');
@@ -16,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
       model: Category
     });
   };
+
   
   return Category;
 };

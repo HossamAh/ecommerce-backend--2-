@@ -1,42 +1,88 @@
-const db = require('../models');
+const { where } = require("sequelize");
+const db = require("../models");
 const { Product } = db;
 
 exports.create = async (req, res) => {
+  const t = await db.sequelize.transaction();
   try {
-    // If main_image_url is provided, use it
-    const productData = req.body;
-    
-    const result = await Product.create(productData);
-    
-    // If main_image_url is provided and ProductImage is also provided, create the image
-    if (productData.main_image_url && productData.productImages && productData.productImages.length > 0) {
-      // Find or create the primary image
-      const primaryImageIndex = productData.productImages.findIndex(img => img.is_primary);
-      
-      if (primaryImageIndex === -1) {
-        // No primary image found, create one using main_image_url
-        await db.ProductImage.create({
-          url: productData.main_image_url,
-          ProductId: result.id,
-          ProductVariantId: null,
-          is_primary: true
-        });
-      } else {
-        // Update the primary image URL to match main_image_url
-        productData.productImages[primaryImageIndex].url = productData.main_image_url;
-      }
-      
-      // Create all product images
-      for (const image of productData.productImages) {
-        await db.ProductImage.create({
-          ...image,
-          ProductId: result.id
-        });
+    console.log(req.body);
+    const { name, base_price, description, CategoryId,discount_percentage, variants } = req.body;
+
+    // 1. Create the Product
+    const product = await Product.create({
+      name,
+      base_price,
+      description,
+      CategoryId,
+      discount_percentage,
+
+    }, { transaction: t });
+
+    const files = req.files || [];
+
+    // 2. Handle Main Image
+    const mainImage = files.find(f => f.fieldname === 'mainImage');
+    if (mainImage) {
+      await db.ProductImage.create({
+        url: mainImage.path,
+        ProductId: product.id,
+        is_primary: true,
+      }, { transaction: t });
+    }
+
+    // 3. Handle Additional Images
+    const additionalImages = files.filter(f => f.fieldname === 'images');
+    if (additionalImages.length > 0) {
+      const imagePromises = additionalImages.map(img => {
+        return db.ProductImage.create({
+          url: img.path,
+          ProductId: product.id,
+          is_primary: false,
+        }, { transaction: t });
+      });
+      await Promise.all(imagePromises);
+    }
+
+    // 4. Handle Variants
+    if (variants && variants.length > 0) {
+      for (let i = 0; i < variants.length; i++) {
+        const variantData = variants[i];
+        
+        // a. Create ProductVariant
+        const productVariant = await db.ProductVariant.create({
+          price: variantData.price,
+          stock: variantData.stock,
+          ProductId: product.id,
+        }, { transaction: t });
+
+        // b. Handle Variant Image
+        const variantImage = files.find(f => f.fieldname === `variants[${i}][image]`);
+        if (variantImage) {
+          await db.ProductImage.create({
+            url: variantImage.path,
+            ProductVariantId: productVariant.id,
+            is_primary: false, 
+          }, { transaction: t });
+        }
+
+        // c. Handle Variant Attributes
+        if (variantData.variantsAttributes) {
+          const attributes = JSON.parse(variantData.variantsAttributes);
+          for (const attr of attributes) {
+            // attr.value is ProductAttributeValueId
+            await productVariant.addProductAttributeValue(attr.value, { transaction: t });
+          }
+        }
       }
     }
-    
+
+    await t.commit();
+    const result = await Product.getProductByIdWithImages(product.id);
     res.status(201).json(result);
+
   } catch (err) {
+    await t.rollback();
+    console.error('Error creating product:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -51,18 +97,17 @@ exports.getAll = async (req, res) => {
       products: results.rows,
       totalPages: totalPages,
       currentPage: page,
-      totalCount: results.count
+      totalCount: results.count,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-
 exports.getById = async (req, res) => {
   try {
-    const result = await Product.getProductByIdwithImages(req.params.id);
-    if (!result) return res.status(404).json({ error: 'Not found' });
+    const result = await Product.getProductByIdWithImages(req.params.id);
+    if (!result) return res.status(404).json({ error: "Not found" });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -70,48 +115,96 @@ exports.getById = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
+  const t = await db.sequelize.transaction();
   try {
+    const productId = req.params.id;
     const productData = req.body;
-    
-    // Update the product
-    await Product.update(productData, { where: { id: req.params.id } });
-    
-    // If main_image_url is updated, update the primary image or create one
-    if (productData.main_image_url) {
-      const primaryImage = await db.ProductImage.findOne({
-        where: { 
-          ProductId: req.params.id,
-          ProductVariantId: null,
-          is_primary: true
-        }
+    const files = req.files || [];
+
+    // 1. Update Product details
+    await Product.update(productData, { where: { id: productId }, transaction: t });
+
+    // 2. Handle Main Image
+    const mainImage = files.find(f => f.fieldname === 'mainImage');
+    if (mainImage) {
+      await db.ProductImage.destroy({ where: { ProductId: productId, is_primary: true }, transaction: t });
+      await db.ProductImage.create({
+        url: mainImage.path,
+        ProductId: productId,
+        is_primary: true,
+      }, { transaction: t });
+    }
+
+    // 3. Handle Additional Images
+    const additionalImages = files.filter(f => f.fieldname === 'images');
+    if (additionalImages.length > 0) {
+      const imagePromises = additionalImages.map(img => {
+        return db.ProductImage.create({
+          url: img.path,
+          ProductId: productId,
+          is_primary: false,
+        }, { transaction: t });
       });
-      
-      if (primaryImage) {
-        // Update existing primary image
-        await primaryImage.update({ url: productData.main_image_url });
-      } else {
-        // Create new primary image
-        await db.ProductImage.create({
-          url: productData.main_image_url,
-          ProductId: req.params.id,
-          ProductVariantId: null,
-          is_primary: true
-        });
+      await Promise.all(imagePromises);
+    }
+
+    // 4. Handle Variants
+    if (productData.variants && productData.variants.length > 0) {
+      for (let i = 0; i < productData.variants.length; i++) {
+        const variantData = productData.variants[i];
+        
+        let productVariant;
+        if (variantData.id) {
+          // Update existing variant
+          await db.ProductVariant.update(variantData, { where: { id: variantData.id }, transaction: t });
+          productVariant = await db.ProductVariant.findByPk(variantData.id);
+        } else {
+          // Create new variant
+          productVariant = await db.ProductVariant.create({
+            ...variantData,
+            ProductId: productId,
+          }, { transaction: t });
+        }
+
+        // Handle variant image
+        const variantImage = files.find(f => f.fieldname === `variants[${i}][image]`);
+        if (variantImage) {
+          await db.ProductImage.destroy({ where: { ProductVariantId: productVariant.id }, transaction: t });
+          await db.ProductImage.create({
+            url: variantImage.path,
+            ProductVariantId: productVariant.id,
+          }, { transaction: t });
+        }
+
+        // Handle variant attributes
+        if (variantData.variantsAttributes) {
+          const attributes = JSON.parse(variantData.variantsAttributes);
+          // Remove old attributes before adding new ones
+          await productVariant.setProductAttributeValues([], { transaction: t }); 
+          for (const attr of attributes) {
+            await productVariant.addProductAttributeValue(attr.value, { transaction: t });
+          }
+        }
       }
     }
-    
-    // Get the updated product
-    const updatedProduct = await Product.getProductByIdwithImages(req.params.id);
+
+    await t.commit();
+    const updatedProduct = await Product.getProductByIdWithImages(productId);
     res.json(updatedProduct);
+
   } catch (err) {
+    await t.rollback();
+    console.error('Error updating product:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
 exports.delete = async (req, res) => {
   try {
+    let product = await Product.findByPk(req.params.id);
+    if (!product) return res.status(404).json({ error: "Not found" });
     await Product.destroy({ where: { id: req.params.id } });
-    res.status(204).end();
+    res.json(req.params.id);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -120,12 +213,11 @@ exports.delete = async (req, res) => {
 exports.getMainImage = async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
-    if (!product) return res.status(404).json({ error: 'Product not found' });
-    
+    if (!product) return res.status(404).json({ error: "Product not found" });
+
     const mainImageUrl = await product.getMainImage();
     res.json({ mainImageUrl });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-

@@ -9,11 +9,6 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0
     },
-    discount_percentage: {
-      type: DataTypes.FLOAT,
-      allowNull: true,
-      defaultValue: 0
-    },
     sku: {
       type: DataTypes.STRING,
       allowNull: true
@@ -35,8 +30,14 @@ module.exports = (sequelize, DataTypes) => {
   ProductVariant.getFullVariant = async function(variantId) {
     return await this.findByPk(variantId, {
       include: [
-        sequelize.models.Color,
-        sequelize.models.Size,
+        {
+          model: sequelize.models.ProductAttributeValue,
+          include: [
+            {
+              model: sequelize.models.ProductAttribute,
+            }
+          ]
+        },
         {
           model: sequelize.models.ProductImage,
           where: { is_primary: true },
@@ -64,8 +65,14 @@ module.exports = (sequelize, DataTypes) => {
     return await this.findAll({
       where: { ProductId: productId },
       include: [
-        sequelize.models.Color,
-        sequelize.models.Size,
+        {
+          model: sequelize.models.ProductAttributeValue,
+          include: [
+            {
+              model: sequelize.models.ProductAttribute,
+            }
+          ]
+        },
         {
           model: sequelize.models.ProductImage,
           where: { is_primary: true },

@@ -8,7 +8,7 @@ exports.create = async (req, res) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     
     // Log the received header for debugging
-    console.log('Auth Header:', authHeader);
+    // console.log('Auth Header:', authHeader);
     
     if (!authHeader?.startsWith('Bearer ')) {
       return res.status(401).json({ 
@@ -24,14 +24,17 @@ exports.create = async (req, res) => {
     }
 
     const checkIfBlacklisted = await BlackListTokens.findOne({where:{ token: token }}); // Check if that token is blacklisted
-    console.log(checkIfBlacklisted);
+    // console.log(checkIfBlacklisted);
     // if true, send a no content response.
     if (checkIfBlacklisted) return res.sendStatus(204);
     // otherwise blacklist token
     await BlackListTokens.create({ token: token });
     // Also clear request cookie on client
-    res.setHeader("Clear-Site-Data", '"cookies"');
-    res.setHeader("Clear-Site-Data", '"Authorization"');
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'None'
+    });
     res.status(200).json({ message: "You are logged out!" });
   } catch (err) {
     res.status(500).json({

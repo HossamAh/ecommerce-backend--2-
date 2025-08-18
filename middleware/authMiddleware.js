@@ -2,13 +2,13 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 module.exports = (req, res, next) => {
-  console.log(req.headers);
+  // console.log(req.headers);
   try {
     // Check for Authorization header in different cases
     const authHeader = req.headers.authorization || req.headers.Authorization;
     
     // Log the received header for debugging
-    console.log('Auth Header:', authHeader);
+    // console.log('Auth Header:', authHeader);
     
     if (!authHeader?.startsWith('Bearer ')) {
       return res.status(401).json({ 

@@ -30,11 +30,11 @@ exports.getById = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  console.log(req.params);
-  console.log(req.body);
+  // console.log(req.params);
+  // console.log(req.body);
   try {
     const result = await CartItem.update(req.body, { where: { id: req.params.id , CartId: req.body.cartId } });
-    console.log(result);
+    // console.log(result);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -42,7 +42,7 @@ exports.update = async (req, res) => {
 };
 
 exports.delete = async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   try {
     await CartItem.destroy({ where: { id: req.body.cartItemId , CartId: req.body.CartId } });
     res.status(204).json({cartItemId: req.body.id});
