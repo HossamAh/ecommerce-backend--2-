@@ -8,7 +8,7 @@ const app = express();
 app.use(cors({
   origin: [
       'http://localhost:3000',
-      'https://todo-list-app-kohl-kappa.vercel.app'], // Replace with your frontend URL
+      'https://ecommerce-app-five-jet-26.vercel.app/'], // Replace with your frontend URL
   credentials: true,
 }));
 app.use(bodyParser.json());
