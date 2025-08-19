@@ -1,12 +1,22 @@
 const mysql = require('mysql2');
 require('dotenv').config();
 
+if(process.env.NODE_ENV !== 'development') {
 const connection = mysql.createConnection({
-  host: process.env.NODE_ENV === "development" ? process.env.DB_HOST : process.env.MYSQLHOST,
-  user: process.env.NODE_ENV === "development" ? process.env.DB_USER : process.env.MYSQLUSER,
-  password: process.env.NODE_ENV === "development" ? process.env.DB_PASSWORD : process.env.MYSQLPASSWORD,
-  database: process.env.NODE_ENV === "development" ? process.env.DB_NAME : process.env.MYSQLDATABASE
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
 });
+}
+else{
+  const connection = mysql.createConnection({
+    host: process.env.MYSQLHOST,
+    user: process.env.MYSQLUSER,
+    password: process.env.MYSQLPASSWORD,
+    database: process.env.MYSQLDATABASE
+  });
+}
 
 connection.connect(err => {
   if (err) throw err;
