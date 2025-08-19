@@ -33,6 +33,13 @@ if (process.env.NODE_ENV === 'development') {
     console.error('Error syncing database:', err);
   });
 }
+else{
+  db.sequelize.sync().then(() => {
+    console.log('Database synced');
+  }).catch(err => {
+    console.error('Error syncing database:', err);
+  });
+}
 
 
 // entity routes
