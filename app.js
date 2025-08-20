@@ -57,6 +57,8 @@ const db = require('./models');
     console.log('Database synced in production');
     db.Product.findAll().then(products => {
       console.log('Products:', products);
+    }).catch(err => {
+      console.error('Error fetching products:', err);
     });
   }).catch(err => {
     console.error('Error syncing database in production:', err);
