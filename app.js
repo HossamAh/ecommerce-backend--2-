@@ -27,20 +27,20 @@ console.log(process.env.MYSQL_URL);
 const db = require('./models');
 // Only use this in development!
 // In production, use migrations instead
-if (process.env.NODE_ENV === 'development') {
-  db.sequelize.sync({ alter: true }).then(() => {
-    console.log('Database synced');
-  }).catch(err => {
-    console.error('Error syncing database:', err);
-  });
-}
-else{
+// if (process.env.NODE_ENV === 'development') {
+//   db.sequelize.sync({ alter: true }).then(() => {
+//     console.log('Database synced');
+//   }).catch(err => {
+//     console.error('Error syncing database:', err);
+//   });
+// }
+// else{
   db.sequelize.sync().then(() => {
     console.log('Database synced in production');
   }).catch(err => {
     console.error('Error syncing database in production:', err);
   });
-}
+// }
 
 
 // entity routes
