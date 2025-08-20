@@ -35,7 +35,7 @@ const db = require('./models');
 //   });
 // }
 // else{
-  db.sequelize.sync().then(() => {
+  db.sequelize.sync({ alter: true }).then(() => {
     console.log('Database synced in production');
   }).catch(err => {
     console.error('Error syncing database in production:', err);
