@@ -18,7 +18,7 @@ require('dotenv').config();
 //   //   database: process.env.MYSQLDATABASE
 //   // });
 // }
-const connection = mysql.createConnection(process.env.MYSQL_URL);
+const connection = mysql.createConnection(process.env.MYSQL_PUBLIC_URL);
 // const connection = mysql.createConnection({
 //   host: process.env.MYSQLHOST,
 //   user: process.env.MYSQLUSER,
