@@ -7,8 +7,9 @@ const path = require('path');
 const app = express();
 app.use(cors({
   origin: [
-      'http://localhost:3000',
-      'https://ecommerce-app-five-jet-26.vercel.app/'], // Replace with your frontend URL
+    'https://ecommerce-app-five-jet-26.vercel.app/', // Replace with your frontend URL
+      'http://localhost:3000'
+  ],
   credentials: true,
 }));
 app.use(bodyParser.json());
