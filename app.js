@@ -5,13 +5,30 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const path = require('path');
 const app = express();
-app.use(cors({
-  origin: [
-    'https://ecommerce-app-five-jet-26.vercel.app/', // Replace with your frontend URL
-      'http://localhost:3000'
-  ],
-  credentials: true,
-}));
+// app.use(cors({
+//   origin: [
+//     'https://ecommerce-app-five-jet-26.vercel.app/', // Replace with your frontend URL
+//       'http://localhost:3000'
+//   ],
+//   credentials: true,
+// }));
+
+const allowedOrigins = [
+  'https://ecommerce-app-five-jet-26.vercel.app', // Your Vercel frontend URL
+  'http://localhost:3000', // For local development
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(cookieParser());
 // Serve static files from the uploads directory
