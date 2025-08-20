@@ -20,11 +20,12 @@ require('dotenv').config();
 // }
 // const connection = mysql.createConnection(process.env.MYSQL_URL);
 const connection = mysql.createConnection({
-      host: process.env.MYSQLHOST,
-    user: process.env.MYSQLUSER,
-    password: process.env.MYSQLPASSWORD,
-    database: process.env.MYSQLDATABASE
-  });
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  port: process.env.MYSQLPORT || 3306 // Include the port number
+});
 connection.connect(err => {
   if (err) throw err;
   console.log('Connected to MySQL database.');
