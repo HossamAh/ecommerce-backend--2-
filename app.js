@@ -36,9 +36,9 @@ if (process.env.NODE_ENV === 'development') {
 }
 else{
   db.sequelize.sync().then(() => {
-    console.log('Database synced');
+    console.log('Database synced in production');
   }).catch(err => {
-    console.error('Error syncing database:', err);
+    console.error('Error syncing database in production:', err);
   });
 }
 
